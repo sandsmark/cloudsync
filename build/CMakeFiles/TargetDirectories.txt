@@ -1,0 +1,4 @@
+/home/sandsmark/prosjekter/cloudsync/build/src/CMakeFiles/cloudsync.dir
+/home/sandsmark/prosjekter/cloudsync/build/src/CMakeFiles/cloudsync_automoc.dir
+/home/sandsmark/prosjekter/cloudsync/build/doc/CMakeFiles/doc-handbook.dir
+/home/sandsmark/prosjekter/cloudsync/build/CMakeFiles/uninstall.dir

@@ -1,0 +1,8 @@
+# Hashes of file build rules.
+3ea65d68753d07e2258eeb615e69bf71 CMakeFiles/uninstall
+e6fca9c77db17ed34794b3a606ae977d doc/CMakeFiles/doc-handbook
+3abe9877f8669908229361895ca45876 doc/index.cache.bz2
+1c798a8785f1fb1635df18f828c59e34 src/CMakeFiles/cloudsync_automoc
+56e075121fbc1d6b0ed6b31bc1eadd5b src/settings.h
+6d1b8109f9da232e9314d332db4a46de src/ui_cloudsyncview_base.h
+96c9ad03edce6d096d1f7e8b07071901 src/ui_prefs_base.h
