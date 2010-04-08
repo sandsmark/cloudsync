@@ -21,10 +21,14 @@
 
 #include <KDE/KLocale>
 
-cloudsync::cloudsync()
+CloudSync::CloudSync()
     : KStatusNotifierItem()
 {
     setIconByName("weather-many-clouds");
+    setCategory(KStatusNotifierItem::Communications);
+
+    setToolTip("weather-many-clouds", "Idle", "CloudSync is currently idle.");
+    setStatus(KStatusNotifierItem::Passive);
 
     // then, setup our actions
     setupActions();
@@ -35,33 +39,52 @@ cloudsync::cloudsync()
     syncer->compareDirs();
 }
 
-cloudsync::~cloudsync()
+CloudSync::~CloudSync()
 {
 }
 
-void cloudsync::setupActions()
+void CloudSync::setupActions()
 {
     KStandardAction::quit(qApp, SLOT(quit()), actionCollection());
-
     KStandardAction::preferences(this, SLOT(optionsPreferences()), actionCollection());
-
-    // custom menu and menu item - the slot is in the class cloudsyncView
-    KAction *custom = new KAction(KIcon("colorize"), i18n("Swi&tch Colors"), this);
-    actionCollection()->addAction( QLatin1String("switch_action"), custom );
 }
 
-void cloudsync::download(KUrl file)
+void CloudSync::download(KUrl file)
 {
-    qDebug() << "DOWNLOAD: " << file.url();
+    KUrl localPath = KUrl(Settings::localUrl().url() +
+                     KUrl::relativeUrl(Settings::remoteUrl(), KUrl(file.directory())) + "/" +
+                     file.fileName());
+
+    localPath.cleanPath();
+
+
+    qDebug() << "DOWNLOAD:" << file << "->" << localPath;
+
+    //KIO::CopyJob job = KIO::copy(file, localPath, KIO::Overwrite);
+    //connect(job, SIGNAL(result(KJob*), SLOT(cleanJobs(KJob*))));
+    //m_copyJobs.append(job);
 }
 
-
-void cloudsync::upload(KUrl file)
+void CloudSync::upload(KUrl file)
 {
-    qDebug() << "UPLOAD: " << file.url();
+    KUrl remotePath = KUrl(Settings::remoteUrl().url() +
+                      KUrl::relativeUrl(Settings::localUrl(), KUrl(file.directory())) + "/" +
+                      file.fileName());
+
+    remotePath.cleanPath();
+    qDebug() << "UPLOAD:" << file << "->" << remotePath;
+
+    //KIO::CopyJob job = KIO::copy(file, Settings::remoteUrl(), KIO::Overwrite);
+    //connect(job, SIGNAL(result(KJob*), SLOT(cleanJobs(KJob*))));
+    //m_copyJobs.append(job);
 }
 
-void cloudsync::optionsPreferences()
+void CloudSync::cleanJobs(KJob *job)
+{
+    m_copyJobs.remove(job);
+}
+
+void CloudSync::optionsPreferences()
 {
     // The preference dialog is derived from prefs_base.ui
     //
@@ -73,7 +96,7 @@ void cloudsync::optionsPreferences()
     }
     KConfigDialog *dialog = new KConfigDialog(NULL, "settings", Settings::self());
     QWidget *generalSettingsDlg = new QWidget;
-    ui_prefs_base.setupUi(generalSettingsDlg);
+    ui_Settings.setupUi(generalSettingsDlg);
     dialog->addPage(generalSettingsDlg, i18n("General"), "package_setting");
     dialog->setAttribute( Qt::WA_DeleteOnClose );
     dialog->show();

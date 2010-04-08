@@ -4,7 +4,6 @@
 #include <KUrl>
 #include <KDirLister>
 #include <KFileItem>
-#include "config.h"
 
 class DirSyncer : public QObject {
     Q_OBJECT;

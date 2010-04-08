@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     KCmdLineArgs::addCmdLineOptions(options);
     KApplication app;
 
-    cloudsync *widget = new cloudsync;
+    CloudSync *widget = new CloudSync;
 
     
 

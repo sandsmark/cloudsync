@@ -2,5 +2,5 @@
 File=cloudsync.kcfg
 ClassName=Settings
 Singleton=true
-Mutators=col_background,col_foreground
+Mutators=remoteUrl,localUrl
 # will create the necessary code for setting those variables

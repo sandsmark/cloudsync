@@ -4,7 +4,7 @@ set(cloudsync_SRCS
     dirsyncer.cpp
  )
 
-kde4_add_ui_files(cloudsync_SRCS prefs_base.ui)
+kde4_add_ui_files(cloudsync_SRCS settings.ui)
 
 kde4_add_kcfg_files(cloudsync_SRCS settings.kcfgc )
 
@@ -17,5 +17,5 @@ install(TARGETS cloudsync ${INSTALL_TARGETS_DEFAULT_ARGS} )
 
 ########### install files ###############
 
-install( FILES cloudsync.desktop  DESTINATION ${XDG_APPS_INSTALL_DIR} )
-install( FILES cloudsync.kcfg  DESTINATION  ${KCFG_INSTALL_DIR} )
+install(FILES cloudsync.desktop  DESTINATION ${XDG_APPS_INSTALL_DIR})
+install(FILES cloudsync.kcfg  DESTINATION  ${KCFG_INSTALL_DIR})
