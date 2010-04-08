@@ -7,7 +7,7 @@
 #define CLOUDSYNC_H
 
 
-#include <kxmlguiwindow.h>
+#include <KStatusNotifierItem>
 
 #include "ui_prefs_base.h"
 
@@ -24,7 +24,7 @@ class KUrl;
  * @author %{AUTHOR} <%{EMAIL}>
  * @version %{VERSION}
  */
-class cloudsync : public KXmlGuiWindow
+class cloudsync : public KStatusNotifierItem
 {
     Q_OBJECT
 public:
@@ -39,17 +39,16 @@ public:
     virtual ~cloudsync();
 
 private slots:
-    void fileNew();
     void optionsPreferences();
+    void download(KUrl file);
+    void upload(KUrl file);
 
 private:
     void setupActions();
 
 private:
-    Ui::prefs_base ui_prefs_base ;
-    cloudsyncView *m_view;
+    Ui::prefs_base ui_prefs_base;
 
-    QPrinter   *m_printer;
     KToggleAction *m_toolbarAction;
     KToggleAction *m_statusbarAction;
 };

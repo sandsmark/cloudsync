@@ -23,31 +23,7 @@ int main(int argc, char **argv)
 
     cloudsync *widget = new cloudsync;
 
-    // see if we are starting with session management
-    if (app.isSessionRestored())
-    {
-        RESTORE(cloudsync);
-    }
-    else
-    {
-        // no session.. just start up normally
-        KCmdLineArgs *args = KCmdLineArgs::parsedArgs();
-        if (args->count() == 0)
-        {
-            //cloudsync *widget = new cloudsync;
-            widget->show();
-        }
-        else
-        {
-            int i = 0;
-            for (; i < args->count(); i++)
-            {
-                //cloudsync *widget = new cloudsync;
-                widget->show();
-            }
-        }
-        args->clear();
-    }
+    
 
     return app.exec();
 }
