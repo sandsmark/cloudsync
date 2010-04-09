@@ -58,7 +58,7 @@ void CloudSync::download(KUrl file)
     localPath.cleanPath();
 
 
-    qDebug() << "DOWNLOAD:" << file << "->" << localPath;
+    //qDebug() << "DOWNLOAD:" << file << "->" << localPath;
 
     //KIO::CopyJob job = KIO::copy(file, localPath, KIO::Overwrite);
     //connect(job, SIGNAL(result(KJob*), SLOT(cleanJobs(KJob*))));
@@ -72,7 +72,7 @@ void CloudSync::upload(KUrl file)
                       file.fileName());
 
     remotePath.cleanPath();
-    qDebug() << "UPLOAD:" << file << "->" << remotePath;
+    //qDebug() << "UPLOAD:" << file << "->" << remotePath;
 
     //KIO::CopyJob job = KIO::copy(file, Settings::remoteUrl(), KIO::Overwrite);
     //connect(job, SIGNAL(result(KJob*), SLOT(cleanJobs(KJob*))));
