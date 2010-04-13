@@ -13,11 +13,9 @@
 
 #include <kconfigdialog.h>
 #include <kstatusbar.h>
-
 #include <kaction.h>
 #include <kactioncollection.h>
 #include <kstandardaction.h>
-
 
 #include <KDE/KLocale>
 
@@ -27,15 +25,15 @@ CloudSync::CloudSync()
     setIconByName("weather-many-clouds");
     setCategory(KStatusNotifierItem::Communications);
 
-    setToolTip("weather-many-clouds", "Idle", "CloudSync is currently idle.");
-    setStatus(KStatusNotifierItem::Passive);
+    updateTooltip();
 
     // then, setup our actions
     setupActions();
 
     DirSyncer *syncer = new DirSyncer(KUrl("/home/sandsmark/tmp/caek"), KUrl("/home/sandsmark/tmp/lol"));
-    connect(syncer, SIGNAL(download(KUrl)), this, SLOT(download(KUrl)));
-    connect(syncer, SIGNAL(upload(KUrl)), this, SLOT(upload(KUrl)));
+    connect(syncer, SIGNAL(downloading(QString)), this, SLOT(transferring(QString)));
+    connect(syncer, SIGNAL(finished(QString)), this, SLOT(finished(QString)));
+
     syncer->compareDirs();
 }
 
@@ -43,45 +41,39 @@ CloudSync::~CloudSync()
 {
 }
 
+void CloudSync::transferring(QString file)
+{
+    m_fileTransfers.insert(file);
+}
+
+void CloudSync::finished(QString file)
+{
+    m_fileTransfers.remove(file);
+}
+
+void CloudSync::updateTooltip()
+{
+    if (m_fileTransfers.isEmpty()) {
+        setToolTip("weather-many-clouds", "Idle", "CloudSync is currently idle.");
+        setStatus(KStatusNotifierItem::Passive);
+    } else if (m_fileTransfers.size() < 3) {
+        QString text = "CloudSync is currently transferring the following files:\n";
+        foreach(QString file, m_fileTransfers)
+            text.append(file + "\n");
+
+        setToolTip("weather-many-clouds", "Transferring", text);
+        setStatus(KStatusNotifierItem::Active);
+    } else{
+        QString text = QString("CloudSync is currently transferring %1 files.").arg(m_fileTransfers.size());
+        setToolTip("weather-many-clouds", "Transferring", text);
+        setStatus(KStatusNotifierItem::Active);
+    }
+}
+
 void CloudSync::setupActions()
 {
     KStandardAction::quit(qApp, SLOT(quit()), actionCollection());
     KStandardAction::preferences(this, SLOT(optionsPreferences()), actionCollection());
-}
-
-void CloudSync::download(KUrl file)
-{
-    KUrl localPath = KUrl(Settings::localUrl().url() +
-                     KUrl::relativeUrl(Settings::remoteUrl(), KUrl(file.directory())) + "/" +
-                     file.fileName());
-
-    localPath.cleanPath();
-
-
-    //qDebug() << "DOWNLOAD:" << file << "->" << localPath;
-
-    //KIO::CopyJob job = KIO::copy(file, localPath, KIO::Overwrite);
-    //connect(job, SIGNAL(result(KJob*), SLOT(cleanJobs(KJob*))));
-    //m_copyJobs.append(job);
-}
-
-void CloudSync::upload(KUrl file)
-{
-    KUrl remotePath = KUrl(Settings::remoteUrl().url() +
-                      KUrl::relativeUrl(Settings::localUrl(), KUrl(file.directory())) + "/" +
-                      file.fileName());
-
-    remotePath.cleanPath();
-    //qDebug() << "UPLOAD:" << file << "->" << remotePath;
-
-    //KIO::CopyJob job = KIO::copy(file, Settings::remoteUrl(), KIO::Overwrite);
-    //connect(job, SIGNAL(result(KJob*), SLOT(cleanJobs(KJob*))));
-    //m_copyJobs.append(job);
-}
-
-void CloudSync::cleanJobs(KJob *job)
-{
-    m_copyJobs.remove(job);
 }
 
 void CloudSync::optionsPreferences()

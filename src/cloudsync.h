@@ -6,10 +6,9 @@
 #ifndef CLOUDSYNC_H
 #define CLOUDSYNC_H
 
+#include <QSet>
 
 #include <KStatusNotifierItem>
-#include <QSet>
-#include <KIO/CopyJob>
 
 #include "ui_settings.h"
 
@@ -41,19 +40,20 @@ public:
 
 private slots:
     void optionsPreferences();
-    void download(KUrl file);
-    void upload(KUrl file);
-    void cleanJobs(KJob*);
+    void transferring(QString);
+    void finished(QString);
 
 private:
     void setupActions();
+    void updateTooltip();
 
 private:
     Ui::Settings ui_Settings;
 
     KToggleAction *m_toolbarAction;
     KToggleAction *m_statusbarAction;
-    QSet<KJob*> m_copyJobs;
+
+    QSet<QString> m_fileTransfers;
 };
 
 #endif // _CLOUDSYNC_H_

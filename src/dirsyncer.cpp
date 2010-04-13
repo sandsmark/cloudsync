@@ -4,6 +4,7 @@
 #include <KDebug>
 #include <KIO/StatJob>
 #include <KIO/Job>
+#include <KIO/CopyJob>
 
 DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
     : m_localPath(localPath), m_remotePath(remotePath)
@@ -32,11 +33,12 @@ void DirSyncer::compareDirs(QString subdir)
             if (local.isDir() && remote.isDir()) {
                 compareDirs(subdir + "/" + local.name());
                 continue;
+            } else {
+                if (local.time(KFileItem::ModificationTime) > remote.time(KFileItem::ModificationTime)) // TODO: checksumming
+                    upload(local.url());
+                else
+                    download(remote.url());
             }
-            if (local.time(KFileItem::ModificationTime) > remote.time(KFileItem::ModificationTime)) // TODO: checksumming
-                emit upload(local.url());
-            else
-                emit download(remote.url());
         }
     }
 
@@ -48,45 +50,88 @@ void DirSyncer::compareDirs(QString subdir)
             KUrl localUrl = Settings::localUrl().url(KUrl::AddTrailingSlash) + relativeUrl.url();
             KUrl remoteUrl = Settings::remoteUrl().url(KUrl::AddTrailingSlash) + relativeUrl.url();
 
-            KIO::StatJob *statJob = KIO::stat(remoteUrl);
-            statJob->exec();
-            KDateTime remoteTime;
-            remoteTime.setTime_t(statJob->statResult().numberValue(KIO::UDSEntry::UDS_MODIFICATION_TIME));
-            statJob->deleteLater();
-
-            statJob = KIO::stat(localUrl);
-            statJob->exec();
-            KDateTime localTime;
-            localTime.setTime_t(statJob->statResult().numberValue(KIO::UDSEntry::UDS_MODIFICATION_TIME));
-            statJob->deleteLater();
+            KDateTime remoteTime = getModificationTime(remoteUrl);
+            KDateTime localTime = getModificationTime(localUrl);
 
             if (remoteTime > localTime) // If the local dir is changed last, we assume we deleted something
-                emit download(file.url());
+                download(file.url());
         }
     }
 
     // Upload new files
     foreach(KFileItem item, localFiles){
         if (!remoteFiles.contains(item)) {
-            KUrl relativeUrl = KUrl::relativeUrl(Settings::localUrl(), KUrl(file.url().directory()));
+            KUrl relativeUrl = KUrl::relativeUrl(Settings::localUrl(), KUrl(item.url().directory()));
             KUrl localUrl = Settings::localUrl().url(KUrl::AddTrailingSlash) + relativeUrl.url();
             KUrl remoteUrl = Settings::remoteUrl().url(KUrl::AddTrailingSlash) + relativeUrl.url();
 
-            KIO::StatJob *statJob = KIO::stat(remoteUrl);
-            statJob->exec();
-            KDateTime remoteTime;
-            remoteTime.setTime_t(statJob->statResult().numberValue(KIO::UDSEntry::UDS_MODIFICATION_TIME));
-            statJob->deleteLater();
 
-            statJob = KIO::stat(localUrl);
-            statJob->exec();
-            KDateTime localTime;
-            localTime.setTime_t(statJob->statResult().numberValue(KIO::UDSEntry::UDS_MODIFICATION_TIME));
-            statJob->deleteLater();
+            KDateTime remoteTime = getModificationTime(remoteUrl);
+            KDateTime localTime = getModificationTime(localUrl);
 
-            if (remoteTime < localTime) // If the local dir is changed last, we assume we deleted something
-                emit upload(item.url());
+            if (remoteTime < localTime) // If the remote dir is changed last, we assume we deleted something
+                upload(item.url());
         }
     }
 }
 
+KDateTime DirSyncer::getModificationTime(KUrl url) 
+{
+    KIO::StatJob *statJob = KIO::stat(url, KIO::HideProgressInfo);
+    statJob->exec();
+    KDateTime r;
+    r.setTime_t(statJob->statResult().numberValue(KIO::UDSEntry::UDS_MODIFICATION_TIME));
+    statJob->deleteLater();
+
+    return r;
+}
+
+
+void DirSyncer::download(KUrl file)
+{
+    KUrl localPath = KUrl(Settings::localUrl().url() +
+                     KUrl::relativeUrl(Settings::remoteUrl(), KUrl(file.directory())) + "/" +
+                     file.fileName());
+
+    localPath.cleanPath();
+    launchTransfer(file, localPath);
+    qDebug() << "DOWNLOAD:" << file << "->" << localPath;
+    emit downloading(file.url());
+}
+
+void DirSyncer::upload(KUrl file)
+{
+    KUrl remotePath = KUrl(Settings::remoteUrl().url() +
+                      KUrl::relativeUrl(Settings::localUrl(), KUrl(file.directory())) + "/" +
+                      file.fileName());
+
+    remotePath.cleanPath();
+    launchTransfer(file, remotePath);
+    qDebug() << "UPLOAD:" << file << "->" << remotePath;
+    emit uploading(file.url());
+}
+
+void DirSyncer::launchTransfer(KUrl from, KUrl to)
+{
+    KIO::CopyJob *job = KIO::copy(from, to, KIO::Overwrite);
+    job->setWriteIntoExistingDirectories(true);
+    connect(job, SIGNAL(result(KJob*)), this, SLOT(cleanJobs(KJob*)));
+    m_copyJobs.insert(job);
+}
+
+void DirSyncer::cleanJobs(KJob *j)
+{
+    KIO::CopyJob *job = static_cast<KIO::CopyJob*> (j);
+
+    m_copyJobs.remove(job);
+    job->deleteLater();
+
+    emit finished(job->srcUrls().first().url());
+
+    KIO::setModificationTime(job->destUrl(), getModificationTime(job->srcUrls().first()).dateTime()); // FIXME: isn't kio supposed to do this?
+    qDebug() << getModificationTime(job->srcUrls().first());
+    qDebug() << getModificationTime(job->destUrl());
+
+    if (m_copyJobs.isEmpty())
+        emit idle();
+}
