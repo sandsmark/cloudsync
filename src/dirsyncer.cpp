@@ -1,3 +1,9 @@
+/*
+ * cloudsync.h
+ *
+ * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
+ */
+
 #include "dirsyncer.h"
 #include "settings.h"
 #include <KApplication>
@@ -12,9 +18,7 @@ DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
 }
 
 void DirSyncer::compareDirs(QString subdir)
-{
-    qDebug() << "Comparing subdir: " << m_localPath.url() << subdir;
-    
+{    
     KDirLister localLister, remoteLister;
     localLister.openUrl(m_localPath.url() + subdir);
     remoteLister.openUrl(m_remotePath.url() + subdir);
@@ -33,14 +37,14 @@ void DirSyncer::compareDirs(QString subdir)
     foreach(KFileItem local, localFileItemList){
         foreach(KFileItem remote, remoteFileItemList){
             if (local.name() != remote.name()) continue;
-            qDebug() << "local:" << local.time(KFileItem::ModificationTime) << remote.time(KFileItem::ModificationTime);
+
             if (local.isDir() && remote.isDir()) {
                 compareDirs(subdir + "/" + local.name());
                 continue;
             } else {
                 if (local.time(KFileItem::ModificationTime) > remote.time(KFileItem::ModificationTime)) // TODO: checksumming
                     upload(local.url());
-                else
+                else if (local.time(KFileItem::ModificationTime) > remote.time(KFileItem::ModificationTime)) // TODO: checksumming
                     download(remote.url());
             }
         }
@@ -50,8 +54,6 @@ void DirSyncer::compareDirs(QString subdir)
     foreach(KUrl item, remoteUrlList){
         if (!localUrlList.contains(item)) {
             // This is stupid. Caching, maybe?
-            qDebug() << "remotePath: " << m_remotePath << " item.directory " << KUrl(item.directory())
-                     << "reldir: " << KUrl::relativeUrl(m_remotePath, KUrl(item.directory()));
             KUrl relativeUrl = KUrl::relativeUrl(m_remotePath, KUrl(item.directory()));
             KUrl localUrl = m_localPath.url(KUrl::AddTrailingSlash) + relativeUrl.url();
             KUrl remoteUrl = m_remotePath.url(KUrl::AddTrailingSlash) + relativeUrl.url();

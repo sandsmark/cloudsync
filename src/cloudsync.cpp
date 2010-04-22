@@ -1,8 +1,9 @@
 /*
  * cloudsync.cpp
  *
- * Copyright (C) 2008 %{AUTHOR} <%{EMAIL}>
+ * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
  */
+
 #include "cloudsync.h"
 #include "settings.h"
 #include "dirsyncer.h"

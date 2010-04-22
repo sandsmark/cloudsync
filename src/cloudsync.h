@@ -1,8 +1,9 @@
 /*
  * cloudsync.h
  *
- * Copyright (C) 2008 Martin T. Sandsmark <martin.sandsmark@kde.org>
+ * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
  */
+
 #ifndef CLOUDSYNC_H
 #define CLOUDSYNC_H
 

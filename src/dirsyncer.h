@@ -1,3 +1,9 @@
+/*
+ * cloudsync.h
+ *
+ * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
+ */
+
 #ifndef DIRSYNCER_H
 #define DIRSYNCER_H
 #include <QDir>

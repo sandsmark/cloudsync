@@ -1,3 +1,9 @@
+/*
+ * cloudsync.h
+ *
+ * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
+ */
+
 #include "cloudsync.h"
 #include <kapplication.h>
 #include <kaboutdata.h>
