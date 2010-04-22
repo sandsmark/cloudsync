@@ -44,7 +44,7 @@ void DirSyncer::compareDirs(QString subdir)
             } else {
                 if (local.time(KFileItem::ModificationTime) > remote.time(KFileItem::ModificationTime)) // TODO: checksumming
                     upload(local.url());
-                else if (local.time(KFileItem::ModificationTime) > remote.time(KFileItem::ModificationTime)) // TODO: checksumming
+                else if (local.time(KFileItem::ModificationTime) < remote.time(KFileItem::ModificationTime)) // TODO: checksumming
                     download(remote.url());
             }
         }
