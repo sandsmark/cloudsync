@@ -23,13 +23,17 @@ void DirSyncer::compareDirs(QString subdir)
     while (!localLister.isFinished() || !remoteLister.isFinished())
         kapp->processEvents(QEventLoop::ExcludeUserInputEvents);
 
-    KFileItemList localFiles = localLister.items(KDirLister::AllItems),
-                  remoteFiles = remoteLister.items(KDirLister::AllItems);
+    KFileItemList localFileItemList = localLister.items(KDirLister::AllItems),
+                  remoteFileItemList = remoteLister.items(KDirLister::AllItems);
+
+    KUrl::List localUrlList = localFileItemList.urlList(),
+               remoteUrlList = remoteFileItemList.urlList();
 
     // Synchronise existing files
-    foreach(KFileItem local, localFiles){
-        foreach(KFileItem remote, remoteFiles){
+    foreach(KFileItem local, localFileItemList){
+        foreach(KFileItem remote, remoteFileItemList){
             if (local.name() != remote.name()) continue;
+            qDebug() << "local:" << local.time(KFileItem::ModificationTime) << remote.time(KFileItem::ModificationTime);
             if (local.isDir() && remote.isDir()) {
                 compareDirs(subdir + "/" + local.name());
                 continue;
@@ -43,33 +47,34 @@ void DirSyncer::compareDirs(QString subdir)
     }
 
     // Download new files
-    foreach(KFileItem file, remoteFiles){
-        if (!localFiles.contains(file)) {
+    foreach(KUrl item, remoteUrlList){
+        if (!localUrlList.contains(item)) {
             // This is stupid. Caching, maybe?
-            KUrl relativeUrl = KUrl::relativeUrl(Settings::localUrl(), KUrl(file.url().directory()));
-            KUrl localUrl = Settings::localUrl().url(KUrl::AddTrailingSlash) + relativeUrl.url();
-            KUrl remoteUrl = Settings::remoteUrl().url(KUrl::AddTrailingSlash) + relativeUrl.url();
+            qDebug() << "remotePath: " << m_remotePath << " item.directory " << KUrl(item.directory())
+                     << "reldir: " << KUrl::relativeUrl(m_remotePath, KUrl(item.directory()));
+            KUrl relativeUrl = KUrl::relativeUrl(m_remotePath, KUrl(item.directory()));
+            KUrl localUrl = m_localPath.url(KUrl::AddTrailingSlash) + relativeUrl.url();
+            KUrl remoteUrl = m_remotePath.url(KUrl::AddTrailingSlash) + relativeUrl.url();
 
             KDateTime remoteTime = getModificationTime(remoteUrl);
             KDateTime localTime = getModificationTime(localUrl);
 
-            if (remoteTime > localTime) // If the local dir is changed last, we assume we deleted something
-                download(file.url());
+            if (remoteTime.toTime_t() > localTime.toTime_t()) // If the local dir is changed last, we assume we deleted something
+                download(item.url());
         }
     }
 
     // Upload new files
-    foreach(KFileItem item, localFiles){
-        if (!remoteFiles.contains(item)) {
-            KUrl relativeUrl = KUrl::relativeUrl(Settings::localUrl(), KUrl(item.url().directory()));
-            KUrl localUrl = Settings::localUrl().url(KUrl::AddTrailingSlash) + relativeUrl.url();
-            KUrl remoteUrl = Settings::remoteUrl().url(KUrl::AddTrailingSlash) + relativeUrl.url();
-
+    foreach(KUrl item, localUrlList){
+        if (!remoteUrlList.contains(item)) {
+            KUrl relativeUrl = KUrl::relativeUrl(m_localPath, item.directory());
+            KUrl localUrl = m_localPath.url(KUrl::AddTrailingSlash) + relativeUrl.url();
+            KUrl remoteUrl = m_remotePath.url(KUrl::AddTrailingSlash) + relativeUrl.url();
 
             KDateTime remoteTime = getModificationTime(remoteUrl);
             KDateTime localTime = getModificationTime(localUrl);
 
-            if (remoteTime < localTime) // If the remote dir is changed last, we assume we deleted something
+            if (remoteTime.toTime_t() < localTime.toTime_t()) // If the remote dir is changed last, we assume we deleted something
                 upload(item.url());
         }
     }
@@ -86,11 +91,10 @@ KDateTime DirSyncer::getModificationTime(KUrl url)
     return r;
 }
 
-
 void DirSyncer::download(KUrl file)
 {
-    KUrl localPath = KUrl(Settings::localUrl().url() +
-                     KUrl::relativeUrl(Settings::remoteUrl(), KUrl(file.directory())) + "/" +
+    KUrl localPath = KUrl(m_localPath.url(KUrl::AddTrailingSlash) +
+                     KUrl::relativeUrl(m_remotePath, KUrl(file.directory())) + "/" +
                      file.fileName());
 
     localPath.cleanPath();
@@ -101,8 +105,8 @@ void DirSyncer::download(KUrl file)
 
 void DirSyncer::upload(KUrl file)
 {
-    KUrl remotePath = KUrl(Settings::remoteUrl().url() +
-                      KUrl::relativeUrl(Settings::localUrl(), KUrl(file.directory())) + "/" +
+    KUrl remotePath = KUrl(m_remotePath.url(KUrl::AddTrailingSlash) +
+                      KUrl::relativeUrl(m_localPath, KUrl(file.directory())) + "/" +
                       file.fileName());
 
     remotePath.cleanPath();
@@ -129,8 +133,6 @@ void DirSyncer::cleanJobs(KJob *j)
     emit finished(job->srcUrls().first().url());
 
     KIO::setModificationTime(job->destUrl(), getModificationTime(job->srcUrls().first()).dateTime()); // FIXME: isn't kio supposed to do this?
-    qDebug() << getModificationTime(job->srcUrls().first());
-    qDebug() << getModificationTime(job->destUrl());
 
     if (m_copyJobs.isEmpty())
         emit idle();

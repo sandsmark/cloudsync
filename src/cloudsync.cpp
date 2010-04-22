@@ -16,6 +16,7 @@
 #include <kaction.h>
 #include <kactioncollection.h>
 #include <kstandardaction.h>
+#include <kmenu.h>
 
 #include <KDE/KLocale>
 
@@ -30,7 +31,9 @@ CloudSync::CloudSync()
     // then, setup our actions
     setupActions();
 
-    DirSyncer *syncer = new DirSyncer(KUrl("/home/sandsmark/tmp/caek"), KUrl("/home/sandsmark/tmp/lol"));
+    contextMenu()->setTitle("CloudSync");
+
+    DirSyncer *syncer = new DirSyncer(Settings::localUrl(), Settings::remoteUrl());
     connect(syncer, SIGNAL(downloading(QString)), this, SLOT(transferring(QString)));
     connect(syncer, SIGNAL(finished(QString)), this, SLOT(finished(QString)));
 
@@ -72,8 +75,8 @@ void CloudSync::updateTooltip()
 
 void CloudSync::setupActions()
 {
-    KStandardAction::quit(qApp, SLOT(quit()), actionCollection());
-    KStandardAction::preferences(this, SLOT(optionsPreferences()), actionCollection());
+    contextMenu()->addAction(KStandardAction::quit(qApp, SLOT(quit()), actionCollection()));
+    contextMenu()->addAction(KStandardAction::preferences(this, SLOT(optionsPreferences()), actionCollection()));
 }
 
 void CloudSync::optionsPreferences()
@@ -89,8 +92,8 @@ void CloudSync::optionsPreferences()
     KConfigDialog *dialog = new KConfigDialog(NULL, "settings", Settings::self());
     QWidget *generalSettingsDlg = new QWidget;
     ui_Settings.setupUi(generalSettingsDlg);
-    dialog->addPage(generalSettingsDlg, i18n("General"), "package_setting");
-    dialog->setAttribute( Qt::WA_DeleteOnClose );
+    dialog->addPage(generalSettingsDlg, i18n("Paths"), "document-open-remote");
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->show();
 }
 

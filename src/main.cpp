@@ -5,15 +5,14 @@
 #include <KDE/KLocale>
 
 static const char description[] =
-    I18N_NOOP("A KDE 4 Application");
+    I18N_NOOP("An automated directory synchroniser using KIO.");
 
 static const char version[] = "%{VERSION}";
 
 int main(int argc, char **argv)
 {
-    KAboutData about("cloudsync", 0, ki18n("cloudsync"), version, ki18n(description),
-                     KAboutData::License_GPL, ki18n("(C) 2007 %{AUTHOR}"), KLocalizedString(), 0, "%{EMAIL}");
-    about.addAuthor( ki18n("%{AUTHOR}"), KLocalizedString(), "%{EMAIL}" );
+    KAboutData about("CloudSync", 0, ki18n("CloudSync"), version, ki18n(description),
+                     KAboutData::License_GPL, ki18n("(C) 2010 Martin T. Sandsmark"), KLocalizedString(), 0, "martin.sandsmark@kde.org");
     KCmdLineArgs::init(argc, argv, &about);
 
     KCmdLineOptions options;
@@ -24,6 +23,6 @@ int main(int argc, char **argv)
     CloudSync *widget = new CloudSync;
 
     
-
+    app.setQuitOnLastWindowClosed(false);
     return app.exec();
 }
