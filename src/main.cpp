@@ -1,5 +1,7 @@
 /*
- * cloudsync.h
+ * main.cpp
+ *
+ * Main entry point for the application.
  *
  * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
  */
@@ -21,9 +23,6 @@ int main(int argc, char **argv)
                      KAboutData::License_GPL, ki18n("(C) 2010 Martin T. Sandsmark"), KLocalizedString(), 0, "martin.sandsmark@kde.org");
     KCmdLineArgs::init(argc, argv, &about);
 
-    KCmdLineOptions options;
-    options.add("+[URL]", ki18n( "Document to open" ));
-    KCmdLineArgs::addCmdLineOptions(options);
     KApplication app;
 
     CloudSync *widget = new CloudSync;

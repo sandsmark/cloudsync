@@ -1,5 +1,8 @@
 /*
- * cloudsync.h
+ * dirsyncer.h
+ *
+ * This contains the declaration of the class that is responsible for
+ * synchronising two directories.
  *
  * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
  */
@@ -9,6 +12,7 @@
 #include <QDir>
 #include <KUrl>
 #include <KDirLister>
+#include <KDirWatch>
 #include <KFileItem>
 #include <KDateTime>
 
@@ -29,6 +33,7 @@ public slots:
 
 private slots:
     void cleanJobs(KJob*);
+    void checkDirty(QString url);
 
 private:
     void launchTransfer(KUrl from, KUrl to);
@@ -36,10 +41,11 @@ private:
     void upload(KUrl file);
 
     KDateTime getModificationTime(KUrl url);
+
     KUrl m_localPath;
     KUrl m_remotePath;
-
     QSet<KJob*> m_copyJobs;
+    KDirWatch m_dirWatcher;
 };
 
 #endif//DIRSYNCER_H

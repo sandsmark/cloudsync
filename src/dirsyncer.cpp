@@ -1,11 +1,15 @@
 /*
- * cloudsync.h
+ * dirsyncer.cpp
+ *
+ * This contains the implementation of the class that is responsible for
+ * synchronising two directories.
  *
  * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
  */
 
 #include "dirsyncer.h"
 #include "settings.h"
+
 #include <KApplication>
 #include <KDebug>
 #include <KIO/StatJob>
@@ -15,6 +19,40 @@
 DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
     : m_localPath(localPath), m_remotePath(remotePath)
 {
+    connect(&m_dirWatcher, SIGNAL(dirty(QString)), SLOT(checkDirty(QString)));
+
+    //TODO: Check for remote folder, and add magic so we avoid stating all the time
+    m_dirWatcher.addDir(localPath.url(), KDirWatch::WatchSubDirs);
+    m_dirWatcher.addDir(remotePath.url(), KDirWatch::WatchSubDirs);
+
+    // Do initial scan after we return, which also starts continous watch
+    QMetaObject::invokeMethod(this, SLOT(compareDirs()), Qt::QueuedConnection);
+}
+
+void DirSyncer::checkDirty(QString u)
+{
+    KUrl url(u);
+    KUrl parent;
+
+    if (m_localPath.isParentOf(url)) {
+        parent = m_localPath;
+    } else {
+        parent = m_remotePath;
+    }
+
+    if (url.fileName().isNull()) {
+        // IT IS LE DIRECTORY!
+        compareDirs(KUrl::relativeUrl(parent, url));
+    } else {
+        KUrl relative = KUrl::relativeUrl(parent, url);
+        KDateTime remote = getModificationTime(m_remotePath.url() + relative.url());
+        KDateTime local = getModificationTime(m_localPath.url() + relative.url());
+        if (local > remote) {
+            upload(m_localPath.url() + relative.url());
+        } else if (local > remote) {
+            download(m_remotePath.url() + relative.url());
+        }
+    }
 }
 
 void DirSyncer::compareDirs(QString subdir)
@@ -80,6 +118,9 @@ void DirSyncer::compareDirs(QString subdir)
                 upload(item.url());
         }
     }
+
+    // Start scanning and watching folders
+    m_dirWatcher.startScan();
 }
 
 KDateTime DirSyncer::getModificationTime(KUrl url) 
@@ -133,8 +174,6 @@ void DirSyncer::cleanJobs(KJob *j)
     job->deleteLater();
 
     emit finished(job->srcUrls().first().url());
-
-    KIO::setModificationTime(job->destUrl(), getModificationTime(job->srcUrls().first()).dateTime()); // FIXME: isn't kio supposed to do this?
 
     if (m_copyJobs.isEmpty())
         emit idle();

@@ -1,6 +1,8 @@
 /*
  * cloudsync.h
  *
+ * This contains the declaration of the status notifier (tray icon) class.
+ *
  * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
  */
 

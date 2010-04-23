@@ -1,6 +1,8 @@
 /*
  * cloudsync.cpp
  *
+ * This contains the implementation of the status notifier (tray icon) class.
+ *
  * Copyright (C) 2010 Martin T. Sandsmark <martin.sandsmark@kde.org>
  */
 
