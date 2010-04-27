@@ -27,8 +27,9 @@ DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
     connect(&m_dirWatcher, SIGNAL(deleted(QString)), SLOT(checkDeleted(KUrl)));
 
     //TODO: Check for remote folder, and add magic so we avoid stating all the time
-    m_dirWatcher.addDir(localPath.url(), KDirWatch::WatchSubDirs);
-    m_dirWatcher.addDir(remotePath.url(), KDirWatch::WatchSubDirs);
+    m_dirWatcher.addDir(localPath.url(), KDirWatch::WatchSubDirs | KDirWatch::WatchFiles);
+    m_dirWatcher.addDir(remotePath.url(), KDirWatch::WatchSubDirs | KDirWatch::WatchFiles);
+    m_dirWatcher.stopScan();
 
     // Do initial scan after we return, which also starts continous watch
     QMetaObject::invokeMethod(this, SLOT(compareDirs()), Qt::QueuedConnection);
