@@ -15,10 +15,13 @@
 #include <KIO/StatJob>
 #include <KIO/Job>
 #include <KIO/CopyJob>
+#include <KIO/DeleteJob>
 
 DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
     : m_localPath(localPath), m_remotePath(remotePath)
 {
+    qDebug() << "remote dir" << remotePath;
+    qDebug() << "local dir" << localPath;
     connect(&m_dirWatcher, SIGNAL(dirty(QString)), SLOT(checkDirty(QString)));
 
     //TODO: Check for remote folder, and add magic so we avoid stating all the time
@@ -101,6 +104,10 @@ void DirSyncer::compareDirs(QString subdir)
 
             if (remoteTime.toTime_t() > localTime.toTime_t()) // If the local dir is changed last, we assume we deleted something
                 download(item.url());
+            else {
+                //KIO::del(remoteUrl); UNCOMMENT WHEN ABSOLUFREAKINGLUTELY SURE IT IS CORRECT!
+                qWarning() << "I almost deleted " << remoteUrl;
+            }
         }
     }
 
@@ -116,8 +123,18 @@ void DirSyncer::compareDirs(QString subdir)
 
             if (remoteTime.toTime_t() < localTime.toTime_t()) // If the remote dir is changed last, we assume we deleted something
                 upload(item.url());
+            else {
+                //KIO::del(localUrl); UNCOMMENT WHEN ABSOLUFREAKINGLUTELY SURE IT IS CORRECT!
+                qWarning() << "I almost deleted " << localUrl;
+            }
         }
     }
+
+    //TODO: naughty sandsmark, more late-night ugly hacks
+    while (!m_copyJobs.isEmpty()) // make sure we've copied in all files from initial sync before we start monitoring
+        kapp->processEvents(QEventLoop::ExcludeUserInputEvents);
+
+    qDebug() << "initial synchronization finished";
 
     // Start scanning and watching folders
     m_dirWatcher.startScan();
@@ -160,7 +177,8 @@ void DirSyncer::upload(KUrl file)
 
 void DirSyncer::launchTransfer(KUrl from, KUrl to)
 {
-    KIO::CopyJob *job = KIO::copy(from, to, KIO::Overwrite);
+    //TODO: queue these internally
+    KIO::CopyJob *job = KIO::copy(from, to, KIO::Overwrite | KIO::HideProgressInfo);
     job->setWriteIntoExistingDirectories(true);
     connect(job, SIGNAL(result(KJob*)), this, SLOT(cleanJobs(KJob*)));
     m_copyJobs.insert(job);
