@@ -22,7 +22,9 @@ DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
 {
     qDebug() << "remote dir" << remotePath;
     qDebug() << "local dir" << localPath;
-    connect(&m_dirWatcher, SIGNAL(dirty(QString)), SLOT(checkDirty(QString)));
+    connect(&m_dirWatcher, SIGNAL(dirty(QString)), SLOT(checkDirty(KUrl)));
+    connect(&m_dirWatcher, SIGNAL(created(QString)), SLOT(checkCreated(KUrl)));
+    connect(&m_dirWatcher, SIGNAL(deleted(QString)), SLOT(checkDeleted(KUrl)));
 
     //TODO: Check for remote folder, and add magic so we avoid stating all the time
     m_dirWatcher.addDir(localPath.url(), KDirWatch::WatchSubDirs);
@@ -32,9 +34,39 @@ DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
     QMetaObject::invokeMethod(this, SLOT(compareDirs()), Qt::QueuedConnection);
 }
 
-void DirSyncer::checkDirty(QString u)
+void DirSyncer::checkDeleted(KUrl url)
 {
-    KUrl url(u);
+    KUrl parentDir;
+    bool isLocal;
+    if (m_localPath.isParentOf(url)) {
+        parentDir = m_localPath;
+        isLocal = true;
+    } else {
+        parentDir = m_remotePath;
+        isLocal = false;
+    }
+
+    KUrl relative = KUrl::relativeUrl(parentDir, url);
+    KUrl toDelete;
+    if (isLocal)
+        toDelete = m_localPath.url() + relative.url();
+    else
+        toDelete = m_remotePath.url() + relative.url();
+
+    //KIO::del(toDelete);//TODO when you're sure, really sure
+    qDebug() << "I almost this dir: " << toDelete;
+
+}
+
+void DirSyncer::checkCreated(KUrl url)
+{
+    //TODO
+    checkDirty(url);
+}
+
+void DirSyncer::checkDirty(KUrl url)
+{
+    qDebug() << "FILTHY ANIMAL: " << url;
     KUrl parent;
 
     if (m_localPath.isParentOf(url)) {

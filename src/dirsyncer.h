@@ -32,8 +32,10 @@ public slots:
     void compareDirs(QString subdir = "");
 
 private slots:
-    void cleanJobs(KJob*);
-    void checkDirty(QString url);
+    void cleanJobs(KJob* completed);
+    void checkDirty(KUrl url);
+    void checkDeleted(KUrl url);
+    void checkCreated(KUrl url);
 
 private:
     void launchTransfer(KUrl from, KUrl to);
