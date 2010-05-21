@@ -33,9 +33,9 @@ public slots:
 
 private slots:
     void cleanJobs(KJob* completed);
-    void checkDirty(KUrl url);
-    void checkDeleted(KUrl url);
-    void checkCreated(KUrl url);
+    void checkDirty(QString url);
+    void checkDeleted(QString url);
+    void checkCreated(QString url);
 
 private:
     void launchTransfer(KUrl from, KUrl to);

@@ -22,9 +22,9 @@ DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
 {
     qDebug() << "remote dir" << remotePath;
     qDebug() << "local dir" << localPath;
-    connect(&m_dirWatcher, SIGNAL(dirty(QString)), SLOT(checkDirty(KUrl)));
-    connect(&m_dirWatcher, SIGNAL(created(QString)), SLOT(checkCreated(KUrl)));
-    connect(&m_dirWatcher, SIGNAL(deleted(QString)), SLOT(checkDeleted(KUrl)));
+    connect(&m_dirWatcher, SIGNAL(dirty(QString)), SLOT(checkDirty(QString)));
+    connect(&m_dirWatcher, SIGNAL(created(QString)), SLOT(checkCreated(QString)));
+    connect(&m_dirWatcher, SIGNAL(deleted(QString)), SLOT(checkDeleted(QString)));
 
     //TODO: Check for remote folder, and add magic so we avoid stating all the time
     m_dirWatcher.addDir(localPath.url(), KDirWatch::WatchSubDirs | KDirWatch::WatchFiles);
@@ -35,8 +35,9 @@ DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
     QMetaObject::invokeMethod(this, SLOT(compareDirs()), Qt::QueuedConnection);
 }
 
-void DirSyncer::checkDeleted(KUrl url)
+void DirSyncer::checkDeleted(QString u)
 {
+    KUrl url(u);
     KUrl parentDir;
     bool isLocal;
     if (m_localPath.isParentOf(url)) {
@@ -59,14 +60,15 @@ void DirSyncer::checkDeleted(KUrl url)
 
 }
 
-void DirSyncer::checkCreated(KUrl url)
+void DirSyncer::checkCreated(QString url)
 {
     //TODO
     checkDirty(url);
 }
 
-void DirSyncer::checkDirty(KUrl url)
+void DirSyncer::checkDirty(QString u)
 {
+    KUrl url(u);
     qDebug() << "FILTHY ANIMAL: " << url;
     KUrl parent;
 
@@ -135,9 +137,10 @@ void DirSyncer::compareDirs(QString subdir)
             KDateTime remoteTime = getModificationTime(remoteUrl);
             KDateTime localTime = getModificationTime(localUrl);
 
-            if (remoteTime.toTime_t() > localTime.toTime_t()) // If the local dir is changed last, we assume we deleted something
+            if (remoteTime > localTime) { // If the local dir is changed last, we assume we deleted something
+                kDebug() << "Remote: " << remoteTime.toTime_t() << " local: " << localTime.toTime_t();
                 download(item.url());
-            else {
+            } else {
                 //KIO::del(remoteUrl); UNCOMMENT WHEN ABSOLUFREAKINGLUTELY SURE IT IS CORRECT!
                 qWarning() << "I almost deleted " << remoteUrl;
             }
@@ -210,7 +213,7 @@ void DirSyncer::upload(KUrl file)
 
 void DirSyncer::launchTransfer(KUrl from, KUrl to)
 {
-    //TODO: queue these internally
+    //TODO: add to a composite job so they get scheduled
     KIO::CopyJob *job = KIO::copy(from, to, KIO::Overwrite | KIO::HideProgressInfo);
     job->setWriteIntoExistingDirectories(true);
     connect(job, SIGNAL(result(KJob*)), this, SLOT(cleanJobs(KJob*)));
