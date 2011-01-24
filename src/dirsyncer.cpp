@@ -20,16 +20,16 @@
 DirSyncer::DirSyncer(KUrl localPath, KUrl remotePath)
     : m_localPath(localPath), m_remotePath(remotePath)
 {
-    qDebug() << "remote dir" << remotePath;
-    qDebug() << "local dir" << localPath;
-    connect(&m_dirWatcher, SIGNAL(dirty(QString)), SLOT(checkDirty(QString)));
-    connect(&m_dirWatcher, SIGNAL(created(QString)), SLOT(checkCreated(QString)));
-    connect(&m_dirWatcher, SIGNAL(deleted(QString)), SLOT(checkDeleted(QString)));
-
-    //TODO: Check for remote folder, and add magic so we avoid stating all the time
-    m_dirWatcher.addDir(localPath.url(), KDirWatch::WatchSubDirs | KDirWatch::WatchFiles);
-    m_dirWatcher.addDir(remotePath.url(), KDirWatch::WatchSubDirs | KDirWatch::WatchFiles);
-    m_dirWatcher.stopScan();
+	qDebug() << "remote dir" << remotePath;
+	qDebug() << "local dir" << localPath;
+	connect(&m_dirWatcher, SIGNAL(dirty(QString)), SLOT(checkDirty(QString)));
+	connect(&m_dirWatcher, SIGNAL(created(QString)), SLOT(checkCreated(QString)));
+	connect(&m_dirWatcher, SIGNAL(deleted(QString)), SLOT(checkDeleted(QString)));
+	
+	//TODO: Check for remote folder, and add magic so we avoid stating all the time
+	m_dirWatcher.addDir(localPath.pathOrUrl(), KDirWatch::WatchSubDirs | KDirWatch::WatchFiles);
+	m_dirWatcher.addDir(remotePath.pathOrUrl(), KDirWatch::WatchSubDirs | KDirWatch::WatchFiles);
+	m_dirWatcher.stopScan();
 
     // Do initial scan after we return, which also starts continous watch
     QMetaObject::invokeMethod(this, SLOT(compareDirs()), Qt::QueuedConnection);
@@ -60,10 +60,35 @@ void DirSyncer::checkDeleted(QString u)
 
 }
 
-void DirSyncer::checkCreated(QString url)
+void DirSyncer::checkCreated(QString u)
 {
-    //TODO
-    checkDirty(url);
+	KUrl url(u);
+	KUrl parentDir;
+	KUrl targetDir;
+	bool isLocal;
+	qDebug()<<"CREATED:" << url;
+	if (m_localPath.isParentOf(url)) {
+		parentDir = m_localPath;
+		targetDir = m_remotePath;
+		isLocal = true;
+	} else {
+		parentDir = m_remotePath;
+		targetDir = m_localPath;
+		isLocal = false;
+	}
+	KUrl relativeUrl = KUrl::relativeUrl(parentDir, url.directory());
+	KUrl sourceUrl = parentDir.url(KUrl::AddTrailingSlash) + relativeUrl.url();
+	KUrl targetUrl = targetDir.url(KUrl::AddTrailingSlash) + relativeUrl.url();
+	
+	KDateTime targetTime = getModificationTime(targetUrl);
+	KDateTime sourceTime = getModificationTime(sourceUrl);
+	
+	if(isLocal){
+		upload(url.url());
+	}else{
+		download(url.url());
+	}
+	
 }
 
 void DirSyncer::checkDirty(QString u)
